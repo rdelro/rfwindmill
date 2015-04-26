@@ -11,6 +11,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
@@ -22,6 +23,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 public class WindmillBlock extends Block implements ITileEntityProvider {
@@ -54,19 +56,20 @@ public class WindmillBlock extends Block implements ITileEntityProvider {
     }
 
     @SideOnly(Side.CLIENT)
-    public IIcon getIcon(int pSide, int pMeta) {
+    public IIcon getIcon(IBlockAccess pWorld, int pX, int pY, int pZ, int pSide) {
+        TileEntityWindmillBlock entity = (TileEntityWindmillBlock)pWorld.getTileEntity(pX, pY, pZ);
+        int orientation = entity.getOrientation();
         switch(pSide) {
             case 0: case 1:
                 return sideIcon;
             case 2: case 3:
-                return (pMeta == 0 || pMeta == 2) ? frontIcon : sideIcon;
+                return (orientation == 0 || orientation == 2) ? frontIcon : sideIcon;
             case 4: case 5:
-                return (pMeta == 1 || pMeta == 3) ? frontIcon : sideIcon;
+                return (orientation == 1 || orientation == 3) ? frontIcon : sideIcon;
             default:
                 return sideIcon;
         }
     }
-
     @Override
     public TileEntity createNewTileEntity(World pWorld, int pMeta) {
         return new TileEntityWindmillBlock(maximumEnergyGeneration, maximumEnergyTransfer, capacity);
@@ -80,9 +83,9 @@ public class WindmillBlock extends Block implements ITileEntityProvider {
     @Override
     public void onBlockPlacedBy(World pWorld, int pX, int pY, int pZ, EntityLivingBase pEntity, ItemStack pItemStack) {
         int direction = MathHelper.floor_double((double) (pEntity.rotationYaw * 4.0f / 360.0f) + 0.50) & 3;
-        pWorld.setBlockMetadataWithNotify(pX, pY, pZ, direction, 2);
+        TileEntityWindmillBlock entity = (TileEntityWindmillBlock)pWorld.getTileEntity(pX, pY, pZ);
+        entity.setOrientation(direction);
         if(pItemStack.stackTagCompound != null) {
-            TileEntityWindmillBlock entity = (TileEntityWindmillBlock)pWorld.getTileEntity(pX, pY, pZ);
             entity.setEnergyStored(pItemStack.stackTagCompound.getInteger(EnergyStorage.NBT_ENERGY));
         }
         super.onBlockPlacedBy(pWorld, pX, pY, pZ, pEntity, pItemStack);
@@ -107,7 +110,9 @@ public class WindmillBlock extends Block implements ITileEntityProvider {
                 if(Util.hasWrench(pPlayer, pX, pY, pZ)) {
                     // Orient the block to face the player
                     int direction = MathHelper.floor_double((double) (pPlayer.rotationYaw * 4.0f / 360.0f) + 0.50) & 3;
-                    pWorld.setBlockMetadataWithNotify(pX, pY, pZ, direction, 2);
+                    TileEntityWindmillBlock entity = (TileEntityWindmillBlock)pWorld.getTileEntity(pX, pY, pZ);
+                    entity.setOrientation(direction);
+                    Minecraft.getMinecraft().renderGlobal.markBlockForRenderUpdate(pX, pY, pZ);
                     return true;
                 }
             }

@@ -3,6 +3,7 @@ package com.piepenguin.rfwindmill.tileentities;
 import cofh.api.energy.IEnergyProvider;
 import cofh.api.energy.IEnergyReceiver;
 import com.piepenguin.rfwindmill.lib.EnergyStorage;
+import com.piepenguin.rfwindmill.lib.Util;
 import net.minecraft.block.material.Material;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -14,8 +15,11 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
     private static final int tunnelRange = 10;
     private static final int minHeight = 60;
     private static final int maxHeight = 100;
-    private static final String NBT_MAXIMUM_ENERGY_GENERATION = "RFWMaximumEnergyGeneration";
     private int maximumEnergyGeneration;
+
+    private int orientation;
+    private static final String NBT_MAXIMUM_ENERGY_GENERATION = "RFWMaximumEnergyGeneration";
+    private static final String NBT_ORIENTATION = "RFWOrientation";
 
     public static final String publicName = "tileEntityWindmillBlock";
     private static final String name = "tileEntityWindmillBlock";
@@ -48,6 +52,7 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
     public void readFromNBT(NBTTagCompound pNbt) {
         super.readFromNBT(pNbt);
         maximumEnergyGeneration = pNbt.getInteger(NBT_MAXIMUM_ENERGY_GENERATION);
+        orientation = pNbt.getInteger(NBT_ORIENTATION);
         storage.readFromNBT(pNbt);
     }
 
@@ -55,6 +60,7 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
     public void writeToNBT(NBTTagCompound pNbt) {
         super.writeToNBT(pNbt);
         pNbt.setInteger(NBT_MAXIMUM_ENERGY_GENERATION, maximumEnergyGeneration);
+        pNbt.setInteger(NBT_ORIENTATION, orientation);
         storage.writeToNBT(pNbt);
     }
 
@@ -82,8 +88,8 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
     }
 
     private int getTunnelLength() {
-        int rangeA = getTunnelOneSidedLength(metadataToDirection());
-        int rangeB = getTunnelOneSidedLength(metadataToDirection().getOpposite());
+        int rangeA = getTunnelOneSidedLength(Util.getForgeDirection(orientation));
+        int rangeB = getTunnelOneSidedLength(Util.getForgeDirection(orientation).getOpposite());
 
         return Math.min(rangeA, rangeB);
     }
@@ -98,21 +104,6 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
                 IEnergyReceiver receiver = (IEnergyReceiver)tile;
                 extractEnergy(direction.getOpposite(), receiver.receiveEnergy(direction.getOpposite(), storage.getExtract(), false), false);
             }
-        }
-    }
-
-    private ForgeDirection metadataToDirection() {
-        switch(getBlockMetadata()) {
-            case 0:
-                return ForgeDirection.NORTH;
-            case 1:
-                return ForgeDirection.EAST;
-            case 2:
-                return ForgeDirection.SOUTH;
-            case 3:
-                return ForgeDirection.WEST;
-            default:
-                return ForgeDirection.NORTH;
         }
     }
 
@@ -150,6 +141,14 @@ public final class TileEntityWindmillBlock extends TileEntity implements IEnergy
 
     @Override
     public boolean canConnectEnergy(ForgeDirection pFrom) {
-        return pFrom != metadataToDirection() && pFrom != metadataToDirection().getOpposite();
+        return pFrom != Util.getForgeDirection(orientation) && pFrom != Util.getForgeDirection(orientation).getOpposite();
+    }
+
+    public int getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(int pOrientation) {
+        orientation = pOrientation;
     }
 }
